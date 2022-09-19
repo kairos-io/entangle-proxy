@@ -71,10 +71,10 @@ spec:
     metadata:
       labels:
         app: entangle-proxy
-        entanglement.c3os-x.io/name: "mysecret"
-        entanglement.c3os-x.io/service: "foo"
-        entanglement.c3os-x.io/target_port: "8001"
-        entanglement.c3os-x.io/direction: "entangle"
+        entanglement.kairos.io/name: "mysecret"
+        entanglement.kairos.io/service: "foo"
+        entanglement.kairos.io/target_port: "8001"
+        entanglement.kairos.io/direction: "entangle"
       name: entangle-proxy
     spec:
       serviceAccountName: entangle
@@ -86,15 +86,15 @@ spec:
           args:
             - "proxy"
 ---
-apiVersion: entangle-proxy.c3os-x.io/v1alpha1
+apiVersion: entangle-proxy.kairos.io/v1alpha1
 kind: Manifests
 metadata:
   name: hello
   namespace: default
   labels:
-   entanglement.c3os-x.io/name: "mysecret"
-   entanglement.c3os-x.io/service: "foo"
-   entanglement.c3os-x.io/target_port: "9090"
+   entanglement.kairos.io/name: "mysecret"
+   entanglement.kairos.io/service: "foo"
+   entanglement.kairos.io/target_port: "9090"
 spec:
    serviceUUID: "foo"
    secretRef: "mysecret"

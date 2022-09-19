@@ -5,7 +5,7 @@ metadata:
   name: manifests-viewer-role
 rules:
 - apiGroups:
-  - entangle-proxy.c3os-x.io
+  - entangle-proxy.kairos.io
   resources:
   - manifests
   verbs:
@@ -13,7 +13,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - entangle-proxy.c3os-x.io
+  - entangle-proxy.kairos.io
   resources:
   - manifests/status
   verbs:

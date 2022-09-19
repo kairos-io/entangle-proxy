@@ -5,9 +5,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.0
   creationTimestamp: null
-  name: manifests.entangle-proxy.c3os-x.io
+  name: manifests.entangle-proxy.kairos.io
 spec:
-  group: entangle-proxy.c3os-x.io
+  group: entangle-proxy.kairos.io
   names:
     kind: Manifests
     listKind: ManifestsList

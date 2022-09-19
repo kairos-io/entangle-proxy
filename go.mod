@@ -1,4 +1,4 @@
-module github.com/c3os-io/entangle-proxy
+module github.com/kairos-io/entangle-proxy
 
 go 1.18
 

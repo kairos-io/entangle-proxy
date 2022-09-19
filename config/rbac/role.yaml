@@ -27,7 +27,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - entangle-proxy.c3os-x.io
+  - entangle-proxy.kairos.io
   resources:
   - manifests
   verbs:
@@ -39,13 +39,13 @@ rules:
   - update
   - watch
 - apiGroups:
-  - entangle-proxy.c3os-x.io
+  - entangle-proxy.kairos.io
   resources:
   - manifests/finalizers
   verbs:
   - update
 - apiGroups:
-  - entangle-proxy.c3os-x.io
+  - entangle-proxy.kairos.io
   resources:
   - manifests/status
   verbs:

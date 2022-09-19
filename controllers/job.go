@@ -3,18 +3,18 @@ package controllers
 import (
 	"fmt"
 
-	entangleproxyv1alpha1 "github.com/c3os-io/entangle-proxy/api/v1alpha1"
+	entangleproxyv1alpha1 "github.com/kairos-io/entangle-proxy/api/v1alpha1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
-	EntanglementNameLabel      = "entanglement.c3os-x.io/name"
-	EntanglementServiceLabel   = "entanglement.c3os-x.io/service"
-	EntanglementDirectionLabel = "entanglement.c3os-x.io/direction"
-	EntanglementPortLabel      = "entanglement.c3os-x.io/target_port"
-	EntanglementHostLabel      = "entanglement.c3os-x.io/host"
+	EntanglementNameLabel      = "entanglement.kairos.io/name"
+	EntanglementServiceLabel   = "entanglement.kairos.io/service"
+	EntanglementDirectionLabel = "entanglement.kairos.io/direction"
+	EntanglementPortLabel      = "entanglement.kairos.io/target_port"
+	EntanglementHostLabel      = "entanglement.kairos.io/host"
 )
 
 const (

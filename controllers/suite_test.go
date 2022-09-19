@@ -30,7 +30,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	entangleproxyv1alpha1 "github.com/c3os-io/entangle-proxy/api/v1alpha1"
+	entangleproxyv1alpha1 "github.com/kairos-io/entangle-proxy/api/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
 

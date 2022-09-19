@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"reflect"
 
-	entangleproxyv1alpha1 "github.com/c3os-io/entangle-proxy/api/v1alpha1"
 	"github.com/go-logr/logr"
+	entangleproxyv1alpha1 "github.com/kairos-io/entangle-proxy/api/v1alpha1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -40,10 +40,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-const manifestsFinalizer = "entangle-proxy.c3os-io.io/finalizer"
+const manifestsFinalizer = "entangle-proxy.kairos-io.io/finalizer"
 
 const (
-	manifestNoFinalize = "entanglement-proxy.c3os-x.io/no-finalize"
+	manifestNoFinalize = "entanglement-proxy.kairos.io/no-finalize"
 )
 
 // ManifestsReconciler reconciles a Manifests object
@@ -62,9 +62,9 @@ func genOwner(ent entangleproxyv1alpha1.Manifests) []metav1.OwnerReference {
 	}
 }
 
-//+kubebuilder:rbac:groups=entangle-proxy.c3os-x.io,resources=manifests,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=entangle-proxy.c3os-x.io,resources=manifests/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=entangle-proxy.c3os-x.io,resources=manifests/finalizers,verbs=update
+//+kubebuilder:rbac:groups=entangle-proxy.kairos.io,resources=manifests,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=entangle-proxy.kairos.io,resources=manifests/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=entangle-proxy.kairos.io,resources=manifests/finalizers,verbs=update
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=create;get;list;watch;update
 //+kubebuilder:rbac:groups="batch",resources=jobs,verbs=create;get;list;watch;update;delete
 
