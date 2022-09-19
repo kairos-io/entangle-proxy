@@ -59,23 +59,22 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: entangle-proxy
-  name: entangle-proxy
+    app: agent-proxy
+  name: agent-proxy
   namespace: default
 spec:
   selector:
     matchLabels:
-      app: entangle-proxy
+      app: agent-proxy
   replicas: 1
   template:
     metadata:
       labels:
-        app: entangle-proxy
+        app: agent-proxy
         entanglement.kairos.io/name: "mysecret"
         entanglement.kairos.io/service: "foo"
         entanglement.kairos.io/target_port: "8001"
         entanglement.kairos.io/direction: "entangle"
-      name: entangle-proxy
     spec:
       serviceAccountName: entangle
       containers:
