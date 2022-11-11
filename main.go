@@ -48,12 +48,16 @@ func init() {
 	//+kubebuilder:scaffold:scheme
 }
 
+var defaultImage = "quay.io/kairos/kubectl"
+
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
+	var kubectlImage string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	flag.StringVar(&kubectlImage, "kubectl-image", defaultImage, "The image used to create kubectl jobs.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
@@ -90,8 +94,9 @@ func main() {
 	}
 
 	if err = (&controllers.ManifestsReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:       mgr.GetClient(),
+		KubectlImage: kubectlImage,
+		Scheme:       mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifests")
 		os.Exit(1)

@@ -49,7 +49,8 @@ const (
 // ManifestsReconciler reconciles a Manifests object
 type ManifestsReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme       *runtime.Scheme
+	KubectlImage string
 }
 
 func genOwner(ent entangleproxyv1alpha1.Manifests) []metav1.OwnerReference {
@@ -91,7 +92,7 @@ func (r *ManifestsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	desiredSecret := GenerateSecret(*manifest)
-	desiredJob := GenerateJob(*manifest, false)
+	desiredJob := GenerateJob(*manifest, false, r.KubectlImage)
 
 	// Allow to bypass finalizers for Manifests (one-shots)
 	_, noFinalize := manifest.Annotations[manifestNoFinalize]
@@ -213,7 +214,7 @@ func (r *ManifestsReconciler) finalize(ctx context.Context, reqLogger logr.Logge
 	}
 
 	// Generate delete job
-	desiredJob = GenerateJob(*m, true)
+	desiredJob = GenerateJob(*m, true, r.KubectlImage)
 
 	j = &batchv1.Job{}
 	err = r.Client.Get(ctx, types.NamespacedName{Name: desiredJob.Name, Namespace: desiredJob.Namespace}, j)

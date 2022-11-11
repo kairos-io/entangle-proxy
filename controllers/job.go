@@ -55,7 +55,7 @@ func GenerateSecret(manifests entangleproxyv1alpha1.Manifests) *corev1.Secret {
 	}
 }
 
-func GenerateJob(manifests entangleproxyv1alpha1.Manifests, delete bool) *batchv1.Job {
+func GenerateJob(manifests entangleproxyv1alpha1.Manifests, delete bool, kubectlImage string) *batchv1.Job {
 	privileged := false
 	serviceAccount := false
 	root := int64(0)
@@ -96,7 +96,7 @@ func GenerateJob(manifests entangleproxyv1alpha1.Manifests, delete bool) *batchv
 							}},
 						},
 						Name:            "proxy",
-						Image:           "bitnami/kubectl:1.24-debian-11",
+						Image:           kubectlImage,
 						ImagePullPolicy: corev1.PullAlways,
 						Command:         []string{"/bin/bash", "-c", "--"},
 						Args:            []string{fmt.Sprintf(runner, action)},
