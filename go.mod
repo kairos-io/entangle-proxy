@@ -4,8 +4,8 @@ go 1.26.4
 
 require (
 	github.com/go-logr/logr v1.4.3
-	github.com/onsi/ginkgo/v2 v2.32.0
-	github.com/onsi/ginkgo/v2 v2.32.0
+	github.com/onsi/ginkgo v1.16.5
+	github.com/onsi/ginkgo/v2 v2.32.2
 	github.com/onsi/gomega v1.40.0
 	k8s.io/api v0.24.0
 	k8s.io/apimachinery v0.24.0
