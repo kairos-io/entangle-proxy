@@ -92,7 +92,11 @@ func (r *ManifestsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	desiredSecret := GenerateSecret(*manifest)
-	desiredJob := GenerateJob(*manifest, false, r.KubectlImage)
+	desiredJob, err := GenerateJob(*manifest, false, r.KubectlImage)
+	if err != nil {
+		reqLogger.Error(err, "Invalid Manifests", "Manifests.Namespace", manifest.Namespace, "Manifests.Name", manifest.Name)
+		return ctrl.Result{}, err
+	}
 
 	// Allow to bypass finalizers for Manifests (one-shots)
 	_, noFinalize := manifest.Annotations[manifestNoFinalize]
@@ -130,7 +134,7 @@ func (r *ManifestsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	// Check if corresponding secret/job already exists in the specified namespace
 	found := &corev1.Secret{}
-	err := r.Client.Get(ctx, types.NamespacedName{Name: desiredSecret.Name, Namespace: desiredSecret.Namespace}, found)
+	err = r.Client.Get(ctx, types.NamespacedName{Name: desiredSecret.Name, Namespace: desiredSecret.Namespace}, found)
 	// If not exists, then create it
 	if err != nil && errors.IsNotFound(err) {
 		reqLogger.Info("Creating a new Secret", "Secret.Namespace", desiredSecret.Namespace, "Secret.Name", desiredSecret.Name)
@@ -214,7 +218,10 @@ func (r *ManifestsReconciler) finalize(ctx context.Context, reqLogger logr.Logge
 	}
 
 	// Generate delete job
-	desiredJob = GenerateJob(*m, true, r.KubectlImage)
+	desiredJob, err = GenerateJob(*m, true, r.KubectlImage)
+	if err != nil {
+		return err
+	}
 
 	j = &batchv1.Job{}
 	err = r.Client.Get(ctx, types.NamespacedName{Name: desiredJob.Name, Namespace: desiredJob.Namespace}, j)

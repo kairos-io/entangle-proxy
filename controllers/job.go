@@ -55,7 +55,15 @@ func GenerateSecret(manifests entangleproxyv1alpha1.Manifests) *corev1.Secret {
 	}
 }
 
-func GenerateJob(manifests entangleproxyv1alpha1.Manifests, delete bool, kubectlImage string) *batchv1.Job {
+func GenerateJob(manifests entangleproxyv1alpha1.Manifests, delete bool, kubectlImage string) (*batchv1.Job, error) {
+	// The job pod carries the secret name as a label so that the entangle
+	// webhook can find the secret and point EDGEVPNTOKEN at it. secretRef is
+	// optional in the CRD, so a Manifests can reach here without one, and
+	// dereferencing it then takes the whole manager down.
+	if manifests.Spec.SecretRef == nil || *manifests.Spec.SecretRef == "" {
+		return nil, fmt.Errorf("secretRef is required")
+	}
+
 	privileged := false
 	serviceAccount := false
 	root := int64(0)
@@ -116,5 +124,5 @@ func GenerateJob(manifests entangleproxyv1alpha1.Manifests, delete bool, kubectl
 				},
 			},
 		},
-	}
+	}, nil
 }

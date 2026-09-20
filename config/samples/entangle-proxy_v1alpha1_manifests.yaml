@@ -3,4 +3,16 @@ kind: Manifests
 metadata:
   name: manifests-sample
 spec:
-  # TODO(user): Add fields here
+  # Name of the secret holding the EdgeVPN network token. The entangle webhook
+  # reads it to inject the sidecar, so it is not optional in practice.
+  secretRef: "mysecret"
+  # UUID of the remote apiserver service published over the VPN.
+  serviceUUID: "foo"
+  manifests:
+    - |
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: manifests-sample
+      data:
+        hello: world
