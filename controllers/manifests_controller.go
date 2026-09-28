@@ -92,7 +92,11 @@ func (r *ManifestsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	desiredSecret := GenerateSecret(*manifest)
-	desiredJob := GenerateJob(*manifest, false, r.KubectlImage)
+	desiredJob, err := GenerateJob(*manifest, false, r.KubectlImage)
+	if err != nil {
+		reqLogger.Error(err, "Invalid Manifests", "Manifests.Namespace", manifest.Namespace, "Manifests.Name", manifest.Name)
+		return ctrl.Result{}, err
+	}
 
 	// Allow to bypass finalizers for Manifests (one-shots)
 	_, noFinalize := manifest.Annotations[manifestNoFinalize]
@@ -128,49 +132,56 @@ func (r *ManifestsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 	}
 
-	// Check if corresponding secret/job already exists in the specified namespace
+	// Reconcile the Secret first, and completely: the Job below mounts it, so a
+	// Job must never be created or restarted while the Secret still holds the
+	// previous manifests.
 	found := &corev1.Secret{}
-	err := r.Client.Get(ctx, types.NamespacedName{Name: desiredSecret.Name, Namespace: desiredSecret.Namespace}, found)
-	// If not exists, then create it
-	if err != nil && errors.IsNotFound(err) {
+	err = r.Client.Get(ctx, types.NamespacedName{Name: desiredSecret.Name, Namespace: desiredSecret.Namespace}, found)
+	secretWritten := false
+	switch {
+	case err != nil && errors.IsNotFound(err):
 		reqLogger.Info("Creating a new Secret", "Secret.Namespace", desiredSecret.Namespace, "Secret.Name", desiredSecret.Name)
-		err = r.Client.Create(ctx, desiredSecret)
-		if err != nil {
+		if err := r.Client.Create(ctx, desiredSecret); err != nil {
 			return reconcile.Result{}, err
 		}
-	} else if err != nil {
+		secretWritten = true
+	case err != nil:
 		return reconcile.Result{}, err
-	}
-
-	// Check if job is there
-	j := &batchv1.Job{}
-	err = r.Client.Get(ctx, types.NamespacedName{Name: desiredJob.Name, Namespace: desiredJob.Namespace}, j)
-	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating a new Job", "Job.Namespace", desiredJob.Namespace, "Job.Name", desiredJob.Name)
-		err = r.Client.Create(ctx, desiredJob)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-	} else if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	// update secret if necessary and re-queue
-	eq := reflect.DeepEqual(desiredSecret.Data, found.Data)
-	if !eq {
+	case !reflect.DeepEqual(desiredSecret.Data, found.Data):
 		currentSecret := found.DeepCopy()
 		currentSecret.Data = desiredSecret.Data
 		reqLogger.Info("Update Secret", "Secret.Namespace", desiredSecret.Namespace, "Secret.Name", desiredSecret.Name)
-
-		err := r.Client.Update(ctx, currentSecret)
-		if err != nil {
+		if err := r.Client.Update(ctx, currentSecret); err != nil {
 			return reconcile.Result{}, err
 		}
+		secretWritten = true
+	}
+
+	// Reconcile the Job. A Get that returned NotFound leaves j zero-valued, so
+	// it can only be read after the Get succeeded: the name of a Job that does
+	// not exist yet is the empty string, and both the Update and the Delete
+	// below used to be handed one.
+	j := &batchv1.Job{}
+	err = r.Client.Get(ctx, types.NamespacedName{Name: desiredJob.Name, Namespace: desiredJob.Namespace}, j)
+	switch {
+	case err != nil && errors.IsNotFound(err):
+		// Nothing ran yet, so there is no stale Job to replace and no status to
+		// report. The Secret above is already current.
+		reqLogger.Info("Creating a new Job", "Job.Namespace", desiredJob.Namespace, "Job.Name", desiredJob.Name)
+		if err := r.Client.Create(ctx, desiredJob); err != nil {
+			return reconcile.Result{}, err
+		}
+		return ctrl.Result{}, nil
+	case err != nil:
+		return reconcile.Result{}, err
+	}
+
+	// A Job's pod template is immutable, so drift is corrected by deleting it
+	// and letting the next cycle recreate it from the current spec.
+	if secretWritten || jobOutOfDate(desiredJob, j) {
 		reqLogger.Info("Delete old job", "Job.Namespace", j.Namespace, "Job.Name", j.Name)
-		// Delete old job, we will recreate a new version of it on the next cycle
 		bgr := metav1.DeletePropagationBackground // Delete also pods
-		err = r.Client.Delete(ctx, j, &client.DeleteOptions{PropagationPolicy: &bgr})
-		if err != nil {
+		if err := r.Client.Delete(ctx, j, &client.DeleteOptions{PropagationPolicy: &bgr}); err != nil {
 			return reconcile.Result{}, err
 		}
 		return reconcile.Result{Requeue: true}, nil
@@ -187,6 +198,38 @@ func (r *ManifestsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	return ctrl.Result{}, nil
+}
+
+// jobOutOfDate reports whether a live Job still runs what the Manifests spec
+// asks for.
+//
+// It deliberately does not compare the two JobSpecs: the API server defaults
+// most of a JobSpec, and the Job controller adds its own `controller-uid` and
+// `job-name` pod labels, so a DeepEqual against a freshly generated Job reports
+// drift on every pass and the reconciler would delete and recreate the Job
+// forever. Only the fields GenerateJob derives from the Manifests spec are
+// compared: the entanglement pod labels, which select the proxy sidecar, and
+// the container image and args, which carry the kubectl image and the action.
+func jobOutOfDate(desired, live *batchv1.Job) bool {
+	for k, v := range desired.Spec.Template.Labels {
+		if live.Spec.Template.Labels[k] != v {
+			return true
+		}
+	}
+
+	desiredContainers := desired.Spec.Template.Spec.Containers
+	liveContainers := live.Spec.Template.Spec.Containers
+	if len(desiredContainers) != len(liveContainers) {
+		return true
+	}
+	for i, c := range desiredContainers {
+		if c.Image != liveContainers[i].Image ||
+			!reflect.DeepEqual(c.Args, liveContainers[i].Args) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -214,7 +257,10 @@ func (r *ManifestsReconciler) finalize(ctx context.Context, reqLogger logr.Logge
 	}
 
 	// Generate delete job
-	desiredJob = GenerateJob(*m, true, r.KubectlImage)
+	desiredJob, err = GenerateJob(*m, true, r.KubectlImage)
+	if err != nil {
+		return err
+	}
 
 	j = &batchv1.Job{}
 	err = r.Client.Get(ctx, types.NamespacedName{Name: desiredJob.Name, Namespace: desiredJob.Namespace}, j)
