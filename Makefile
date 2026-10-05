@@ -265,9 +265,12 @@ test_deps:
 	go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo
 	go install github.com/onsi/gomega/...
 
+# The Go packages are ./api and ./controllers. There is no ./pkg in this
+# repository, and ginkgo fails with "Found no test suites" when the pattern
+# it is given matches nothing, so the target has to name the whole module.
 .PHONY: unit-tests
 unit-tests: test_deps
-	ginkgo -r -v  --covermode=atomic --coverprofile=coverage.out -p -r ./pkg/...
+	ginkgo -r -v --covermode=atomic --coverprofile=coverage.out -p ./...
 
 e2e-tests:
 	KUBE_VERSION=${KUBE_VERSION} $(ROOT_DIR)/script/test.sh
