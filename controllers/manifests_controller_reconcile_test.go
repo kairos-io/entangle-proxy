@@ -88,7 +88,14 @@ func mustJob(t *testing.T, m entangleproxyv1alpha1.Manifests, image string) *bat
 func newTestReconciler(t *testing.T, objs ...client.Object) (*ManifestsReconciler, client.Client) {
 	t.Helper()
 	s := testScheme(t)
-	c := fake.NewClientBuilder().WithScheme(s).WithObjects(objs...).Build()
+	// Manifests carries +kubebuilder:subresource:status, and since
+	// controller-runtime v0.15 the fake client only serves a status
+	// subresource for the types it was told about.
+	c := fake.NewClientBuilder().
+		WithScheme(s).
+		WithObjects(objs...).
+		WithStatusSubresource(&entangleproxyv1alpha1.Manifests{}).
+		Build()
 	return &ManifestsReconciler{Client: c, Scheme: s, KubectlImage: "quay.io/kairos/kubectl:latest"}, c
 }
 
