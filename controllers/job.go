@@ -17,6 +17,15 @@ const (
 	EntanglementHostLabel      = "entanglement.kairos.io/host"
 )
 
+// runner is the script the Job container runs. It waits for the remote API
+// to answer through the edgevpn sidecar, runs kubectl once, stops the
+// sidecar so the pod can terminate, and exits.
+//
+// The kubectl status is captured before pkill runs, and is the status the
+// script exits with. The controller has nothing else to judge the operation
+// by: Status.Executed and the finalizer are both decided from
+// Job.Status.Succeeded, so a script that exits 0 whatever kubectl did would
+// report a rejected manifest as applied, and a failed delete as finalized.
 const (
 	runner = `
 	function wait_for {
@@ -29,8 +38,9 @@ const (
 	ret=$?
 	if [ $ret == 0 ]; then
 	   kubectl %s -f /manifests
+	   ret=$?
 	   pkill edgevpn
-	   exit 0
+	   exit $ret
 	else
 	  pkill edgevpn
 	  exit $ret
